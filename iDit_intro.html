@@ -1,0 +1,181 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>iDit 소개서</title>
+<style>
+@page { size: 1280px 720px; margin: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif; color: #15293b; }
+.slide { position: relative; width: 1280px; height: 720px; overflow: hidden;
+         page-break-after: always; background: #fff; padding: 64px 72px; }
+.slide:last-child { page-break-after: auto; }
+
+/* 어두운 슬라이드 (표지/마감) */
+.dark { background: #0f2234; color: #eaf1f7; }
+.dark .h1 { color: #ffffff; }
+.dark .sub { color: #9fb6c9; }
+.dark .foot { color: #7d93a6; }
+
+.logo-wrap { margin-bottom: 40px; }
+.logo-plate { display: inline-flex; align-items: center; gap: 16px;
+              background: #ffffff; border-radius: 16px; padding: 18px 26px; }
+.logo-plate img { height: 72px; width: auto; display: block; }
+.logo-plate .wm { font-size: 46px; font-weight: 800; color: #0e3f63; letter-spacing: 1px; }
+.logo-dark img { height: 84px; }
+
+.h1 { font-size: 64px; font-weight: 800; line-height: 1.12; color: #16436a; }
+.sub { font-size: 26px; color: #4f6475; margin-top: 22px; font-weight: 500; }
+.foot { font-size: 20px; color: #6b7d8c; margin-top: 96px; }
+.title-foot { position: absolute; left: 72px; bottom: 72px; }
+
+/* 콘텐츠 헤딩 */
+.h2 { font-size: 48px; font-weight: 800; color: #16548a; margin-bottom: 40px; }
+
+/* 스탯 카드 행 */
+.stats { display: flex; gap: 20px; }
+.stat { flex: 1; background: #eef2f6; border-radius: 14px; padding: 28px 22px; }
+.stat .big { font-size: 52px; font-weight: 800; color: #16548a; line-height: 1; }
+.stat .lbl { font-size: 21px; font-weight: 700; margin-top: 16px; color: #1a2e3f; }
+.stat .dsc { font-size: 17px; color: #5f6f7c; margin-top: 10px; line-height: 1.4; }
+.note { font-size: 21px; color: #41576a; line-height: 1.5; margin-top: 40px; }
+
+/* 2단 비교 */
+.cols { display: flex; align-items: stretch; gap: 26px; }
+.col { flex: 1; border-radius: 16px; padding: 34px 32px; }
+.col.light { background: #eef2f6; }
+.col.fill { background: #0e3f63; color: #e9f1f8; }
+.col .ct { font-size: 28px; font-weight: 800; margin-bottom: 18px; display: flex; align-items: center; gap: 14px; }
+.col.light .ct { color: #16436a; }
+.badge { width: 46px; height: 46px; border-radius: 50%; display: inline-flex; align-items: center;
+         justify-content: center; font-size: 24px; color: #fff; flex: 0 0 auto; }
+.badge.warn { background: #c0392b; }
+.badge.ok { background: #f5a623; }
+.col .cb { font-size: 20px; line-height: 1.55; }
+.col.fill .cb { color: #d4e3ef; }
+.flow { font-size: 22px; font-weight: 700; color: #16548a; margin-top: 34px; }
+
+/* 기능 그리드 */
+.grid { display: grid; gap: 20px; }
+.grid.c3 { grid-template-columns: repeat(3,1fr); }
+.grid.c2 { grid-template-columns: repeat(2,1fr); }
+.fcard { background: #eef2f6; border-radius: 14px; padding: 24px 22px; }
+.fhead { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.icon { width: 44px; height: 44px; border-radius: 50%; background: #0e4f7c; color: #fff;
+        display: inline-flex; align-items: center; justify-content: center; font-size: 22px; flex: 0 0 auto; }
+.ftitle { font-size: 22px; font-weight: 800; color: #17334a; }
+.fdesc { font-size: 17.5px; color: #5f6f7c; line-height: 1.45; }
+
+/* 리스트 행 (아이콘 + 제목 + 설명) */
+.rows { display: flex; flex-direction: column; gap: 14px; }
+.row { background: #eef2f6; border-radius: 12px; padding: 18px 24px; display: flex; align-items: center; gap: 20px; }
+.row .icon { width: 46px; height: 46px; font-size: 22px; }
+.row .rt { font-size: 22px; font-weight: 800; color: #17334a; width: 220px; flex: 0 0 auto; }
+.row .rd { font-size: 19px; color: #51626f; }
+
+/* 단계 (번호 원) */
+.steps { display: flex; flex-direction: column; gap: 18px; }
+.step { display: flex; align-items: center; gap: 18px; }
+.snum { width: 44px; height: 44px; border-radius: 50%; background: #f5a623; color: #fff;
+        font-weight: 800; font-size: 20px; display: inline-flex; align-items: center; justify-content: center; flex:0 0 auto;}
+.stext { font-size: 20px; color: #22384a; }
+.two { display: flex; gap: 40px; align-items: flex-start; }
+.two .left { flex: 1.2; } .two .right { flex: 1; }
+.bullets { list-style: none; }
+.bullets li { font-size: 21px; color: #273d4f; line-height: 1.5; margin-bottom: 16px; padding-left: 26px; position: relative; }
+.bullets li:before { content: "•"; color: #16548a; position: absolute; left: 4px; font-weight: 800; }
+
+/* 아키텍처 */
+.arch-top { background: #0e3f63; color: #eaf3fa; border-radius: 14px; padding: 26px 30px; }
+.arch-top .t { font-size: 26px; font-weight: 800; }
+.arch-top .d { font-size: 19px; color: #c6d9e8; margin-top: 8px; }
+.arch-arrow { text-align: center; font-size: 30px; color: #f5a623; margin: 14px 0; font-weight: 800; }
+.arch-foot { font-size: 18px; color: #5f6f7c; margin-top: 26px; }
+
+/* 타임라인 */
+.tl { display: flex; gap: 0; margin-top: 30px; }
+.tlcol { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.tlhead { font-size: 22px; font-weight: 800; color: #16548a; margin-bottom: 18px; height: 28px; }
+.tldot { width: 22px; height: 22px; border-radius: 50%; background: #0e4f7c; position: relative; }
+.tldot.last { background: #f5a623; }
+.tlline { position: absolute; top: 50%; left: 50%; width: 100%; height: 3px; background: #c9d6e0; transform: translateY(-50%); z-index: -1; }
+.tlbar { position: relative; height: 3px; background: #c9d6e0; width: 100%; margin: 10px 0 18px; }
+.tlbody { background: #eef2f6; border-radius: 12px; padding: 18px 16px; font-size: 16.5px; color: #4a5c6a;
+          line-height: 1.45; width: 92%; min-height: 150px; }
+.pageno { position: absolute; right: 36px; bottom: 26px; font-size: 15px; color: #9aa9b5; }
+.dark .pageno { color: #5c7083; }
+</style></head><body><section class="slide dark">
+  <div class="logo-wrap logo-dark"><div class="logo-plate"><img src="file:///D:/Source/IDOIT/iDit/iDit.png" alt="iDit"><span class="wm">iDit</span></div></div>
+  <div class="h1">코딩을 위한 가벼운 에디터</div>
+  <div class="sub">VS Code 엔진의 문법 강조에, 원격(FTP·SFTP) 열기·저장과 인코딩 변환까지</div>
+  <div class="foot title-foot">소개서 | 버전 0.1.0 | (주)이도아이티</div>
+</section>
+<section class="slide">
+  <div class="h2">iDit를 한눈에 보기</div>
+  <div class="stats"><div class="stat"><div class="big">Monaco</div><div class="lbl">코드 엔진</div><div class="dsc">VS Code 핵심 엔진, 다수 언어 강조</div></div><div class="stat"><div class="big">탭</div><div class="lbl">여러 파일</div><div class="dsc">탭으로 열고 독립 편집·실행취소</div></div><div class="stat"><div class="big">원격</div><div class="lbl">FTP · SFTP</div><div class="dsc">한 창에서 열기 · 저장</div></div><div class="stat"><div class="big">인코딩</div><div class="lbl">지정 변환</div><div class="dsc">EUC-KR 등으로 열기 · 저장</div></div></div>
+  <div class="note">Monaco Editor와 Tauri로 만든 Windows용 코드 에디터입니다. 코드 편집, 원격 파일 작업, 인코딩 변환을 한 앱에서 씁니다.</div>
+  <div class="pageno">2</div>
+</section>
+<section class="slide">
+  <div class="h2">코드 편집: Monaco 엔진</div>
+  <div class="grid c3"><div class="fcard"><div class="fhead"><span class="icon">&#127912;</span><span class="ftitle">문법 강조</span></div><div class="fdesc">C · Python · JS/TS · JSON 등 다수 언어</div></div><div class="fcard"><div class="fhead"><span class="icon">&#128269;</span><span class="ftitle">찾기 · 바꾸기</span></div><div class="fdesc">정규식 · 전체 교체(Ctrl+F / Ctrl+H)</div></div><div class="fcard"><div class="fhead"><span class="icon">&#9998;</span><span class="ftitle">멀티 커서</span></div><div class="fdesc">여러 곳 동시 편집 · 블록 선택</div></div><div class="fcard"><div class="fhead"><span class="icon">&#128506;</span><span class="ftitle">미니맵</span></div><div class="fdesc">전체 코드를 한눈에, 토글 가능</div></div><div class="fcard"><div class="fhead"><span class="icon">&#127760;</span><span class="ftitle">언어 선택</span></div><div class="fdesc">상태바에서 클릭해 언어 지정</div></div><div class="fcard"><div class="fhead"><span class="icon">&#8617;</span><span class="ftitle">자동 줄바꿈</span></div><div class="fdesc">줄바꿈 · 들여쓰기 · 확대/축소</div></div></div>
+  <div class="pageno">3</div>
+</section>
+<section class="slide">
+  <div class="h2">원격 열기 · 저장 (FTP / SFTP)</div>
+  <div class="two">
+    <div class="left"><ul class="bullets"><li>왼쪽 사이트 목록 + 오른쪽 파일 탐색을 한 창에</li><li>파일 목록에 이름 · 크기 · 수정일 컬럼 + 정렬</li><li>사이트별 마지막 폴더를 기억해 그 자리부터</li><li>그룹으로 사이트 정리, 비밀번호는 DPAPI 암호화</li><li>저장하면 같은 연결로 원격에 바로 반영</li></ul></div>
+    <div class="right"><div class="steps"><div class="step"><span class="snum">1</span><span class="stext">Alt+F로 사이트 관리자 열기</span></div><div class="step"><span class="snum">2</span><span class="stext">사이트 더블클릭 → 바로 접속</span></div><div class="step"><span class="snum">3</span><span class="stext">파일 선택해 열기 · 저장</span></div></div></div>
+  </div>
+  <div class="pageno">4</div>
+</section>
+<section class="slide">
+  <div class="h2">인코딩을 지정해서 열고 저장</div>
+  <div class="cols">
+    <div class="col light"><div class="ct"><span class="badge warn">!</span>한글 깨짐 문제</div><div class="cb">EUC-KR(CP949)로 저장된 소스나 설정 파일을 UTF-8 에디터로 열면 한글 주석·문자열이 깨집니다. 반대로 저장할 때도 인코딩을 못 맞추면 서버에서 깨져 보입니다.</div></div>
+    <div class="col fill"><div class="ct"><span class="badge ok">&#10003;</span>iDit의 해결</div><div class="cb">&#x27;인코딩 지정해서 열기/저장&#x27;으로 UTF-8 · EUC-KR · UTF-16 · Shift-JIS 등 원하는 인코딩을 골라 처리합니다. 탭마다 인코딩을 기억하고, 표현 못 하는 글자가 있으면 저장 전 경고합니다.</div></div>
+  </div>
+  <div class="flow">파일 바이트  →  지정 인코딩으로 디코딩 · 인코딩  →  편집 · 저장</div>
+  <div class="pageno">5</div>
+</section>
+<section class="slide">
+  <div class="h2">브랜드와 편의 기능</div>
+  <div class="grid c3"><div class="fcard"><div class="fhead"><span class="icon">&#128449;</span><span class="ftitle">커스텀 메뉴바</span></div><div class="fdesc">로고 + 파일·편집·보기·도움말 스트립</div></div><div class="fcard"><div class="fhead"><span class="icon">&#128448;</span><span class="ftitle">글꼴 변경</span></div><div class="fdesc">코딩 글꼴 선택 + 크기 +/- 조절</div></div><div class="fcard"><div class="fhead"><span class="icon">&#128209;</span><span class="ftitle">탭 편집</span></div><div class="fdesc">여러 파일을 탭으로, 변경 표시</div></div><div class="fcard"><div class="fhead"><span class="icon">&#128204;</span><span class="ftitle">상태바</span></div><div class="fdesc">경로 · 언어 · 인코딩 · 줄/열 표시</div></div><div class="fcard"><div class="fhead"><span class="icon">&#9000;</span><span class="ftitle">단축키</span></div><div class="fdesc">Ctrl+N/O/S, Alt+F(원격), Ctrl+F(찾기)</div></div><div class="fcard"><div class="fhead"><span class="icon">&#128190;</span><span class="ftitle">로컬 열기·저장</span></div><div class="fdesc">네이티브 파일 대화상자 연동</div></div></div>
+  <div class="pageno">6</div>
+</section>
+<section class="slide">
+  <div class="h2">구조: 가벼운 UI, 단단한 Rust</div>
+  <div class="arch-top"><div class="t">프론트엔드  TypeScript + Monaco Editor</div><div class="d">에디터 화면 · 탭 · 커스텀 메뉴바 · 원격/인코딩/글꼴 창</div></div>
+  <div class="arch-arrow">&#9660;</div>
+  <div class="grid c3"><div class="fcard"><div class="ftitle">SSH / SFTP</div><div class="fdesc">russh 네이티브 + 자체 SFTP v3 클라이언트</div></div><div class="fcard"><div class="ftitle">FTP</div><div class="fdesc">tokio 네이티브 FTP (PASV)</div></div><div class="fcard"><div class="ftitle">Windows 연동</div><div class="fdesc">DPAPI 비밀번호 · 인코딩 변환(encoding_rs)</div></div></div>
+  <div class="arch-foot">백엔드 Rust · Tauri 2 · 단일 실행파일(iDit.exe)과 MSI 설치 관리자로 배포</div>
+  <div class="pageno">6</div>
+</section>
+<section class="slide">
+  <div class="h2">개발 이력</div>
+  <div class="tl"><div class="tlcol">
+          <div class="tlhead">기반</div>
+          <div class="tlbar"><div class="tldot" style="margin:0 auto;"></div></div>
+          <div class="tlbody">Tauri + Monaco 스캐폴드 · 코드 에디터</div>
+        </div><div class="tlcol">
+          <div class="tlhead">메뉴·FTP</div>
+          <div class="tlbar"><div class="tldot" style="margin:0 auto;"></div></div>
+          <div class="tlbody">File/Edit/View/Help · FTP 열기/저장</div>
+        </div><div class="tlcol">
+          <div class="tlhead">SFTP</div>
+          <div class="tlbar"><div class="tldot" style="margin:0 auto;"></div></div>
+          <div class="tlbody">SFTP 추가 · 사이트 관리자(그룹)</div>
+        </div><div class="tlcol">
+          <div class="tlhead">변환</div>
+          <div class="tlbar"><div class="tldot" style="margin:0 auto;"></div></div>
+          <div class="tlbody">인코딩 지정 열기/저장 · 글꼴 설정</div>
+        </div><div class="tlcol">
+          <div class="tlhead">통합·브랜딩</div>
+          <div class="tlbar"><div class="tldot last" style="margin:0 auto;"></div></div>
+          <div class="tlbody">원격 통합 창(컬럼·정렬·경로기억) · 커스텀 메뉴바+로고</div>
+        </div></div>
+  <div class="pageno">7</div>
+</section>
+<section class="slide dark">
+  <div style="margin-top:150px;"></div>
+  <div class="h1">iDOT · iDrop와 함께 쓰는 에디터</div>
+  <div class="sub">코드 편집부터 원격 파일 작업, 인코딩 변환까지 한 앱으로.</div>
+  <div style="margin-top:80px; font-size:22px; font-weight:700; color:#eaf1f7;">버그 문의  nezzard@idoits.co.kr</div>
+  <div class="foot" style="margin-top:14px;">© 2026 (주)이도아이티. All rights reserved.</div>
+</section></body></html>

@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iDit</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="menubar"></div>
+      <div id="tabbar"></div>
+
+      <div id="editor"></div>
+
+      <footer id="statusbar">
+        <span id="st-path"></span>
+        <span class="spacer"></span>
+        <span id="st-lang" class="clickable" title="언어 선택"></span>
+        <span id="st-tabsize" class="clickable" title="탭 크기 (클릭하여 2 / 4 / 8 전환)"></span>
+        <span id="st-encoding">UTF-8</span>
+        <span id="st-pos"></span>
+      </footer>
+    </div>
+
+    <!-- 원격 열기/저장 — 사이트 선택 + 파일 탐색을 한 창에서 -->
+    <div id="remote-modal" class="modal hidden">
+      <div class="modal-box modal-box-remote">
+        <h3 id="remote-title">원격 열기</h3>
+        <div class="remote-body">
+          <!-- 왼쪽: 사이트 목록 -->
+          <div class="remote-sites">
+            <div id="remote-site-list" class="remote-site-list"></div>
+            <div class="remote-site-btns">
+              <button id="remote-site-new" type="button" title="새 사이트">＋</button>
+              <button id="remote-site-edit" type="button" title="편집">✎</button>
+              <button id="remote-site-del" type="button" title="삭제">✕</button>
+              <button id="remote-site-group" type="button" title="새 그룹">＋그룹</button>
+            </div>
+          </div>
+          <!-- 오른쪽: 파일 탐색 -->
+          <div class="remote-browser">
+            <div class="remote-path-row">
+              <button id="remote-up" type="button" title="상위 폴더">↑</button>
+              <input id="remote-path" type="text" spellcheck="false" />
+              <button id="remote-go" type="button">이동</button>
+            </div>
+            <div class="remote-list-head">
+              <span class="col-name" data-sort="name">이름</span>
+              <span class="col-size" data-sort="size">크기</span>
+              <span class="col-date" data-sort="date">수정일</span>
+            </div>
+            <div id="remote-list" class="remote-list"></div>
+            <div id="remote-save-row" class="remote-save-row hidden">
+              <label>파일명</label>
+              <input id="remote-filename" type="text" spellcheck="false" />
+            </div>
+          </div>
+        </div>
+        <div id="remote-status" class="remote-status"></div>
+        <div id="remote-error" class="modal-error"></div>
+        <div class="modal-btns">
+          <button id="remote-cancel" type="button" class="modal-dismiss">취소</button>
+          <button id="remote-ok" type="button" class="primary">열기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 사이트 편집 (새 사이트/편집) -->
+    <div id="site-form-modal" class="modal hidden">
+      <div class="modal-box">
+        <h3 id="site-form-title">사이트 편집</h3>
+        <label>이름</label>
+        <input id="site-name" type="text" spellcheck="false" />
+        <label>그룹</label>
+        <select id="site-group"></select>
+        <label>프로토콜</label>
+        <select id="site-protocol">
+          <option value="ftp">FTP</option>
+          <option value="sftp">SFTP</option>
+        </select>
+        <label>호스트</label>
+        <input id="site-host" type="text" spellcheck="false" />
+        <label>포트</label>
+        <input id="site-port" type="text" value="21" spellcheck="false" />
+        <label>사용자</label>
+        <input id="site-user" type="text" spellcheck="false" />
+        <label>비밀번호</label>
+        <input id="site-pass" type="password" />
+        <div id="site-form-error" class="modal-error"></div>
+        <div class="modal-btns">
+          <button id="site-form-cancel" type="button" class="modal-dismiss">취소</button>
+          <button id="site-form-save" type="button" class="primary">저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 인코딩 선택 (지정해서 열기/저장) -->
+    <div id="encoding-modal" class="modal hidden">
+      <div class="modal-box">
+        <h3 id="encoding-title">인코딩 선택</h3>
+        <label>인코딩</label>
+        <select id="encoding-select">
+          <option value="UTF-8">UTF-8</option>
+          <option value="EUC-KR">한국어 (EUC-KR / CP949)</option>
+          <option value="UTF-16LE">UTF-16 LE</option>
+          <option value="UTF-16BE">UTF-16 BE</option>
+          <option value="SHIFT_JIS">일본어 (Shift-JIS)</option>
+          <option value="GBK">중국어 간체 (GBK)</option>
+          <option value="BIG5">중국어 번체 (Big5)</option>
+          <option value="WINDOWS-1252">서유럽 (Windows-1252)</option>
+        </select>
+        <div id="encoding-error" class="modal-error"></div>
+        <div class="modal-btns">
+          <button id="encoding-cancel" type="button" class="modal-dismiss">취소</button>
+          <button id="encoding-ok" type="button" class="primary">확인</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 언어(문법 강조) 선택 -->
+    <div id="language-modal" class="modal hidden">
+      <div class="modal-box">
+        <h3>언어 선택</h3>
+        <input id="language-filter" type="text" spellcheck="false" placeholder="언어 검색 (예: c, python, json)" />
+        <div id="language-list" class="language-list"></div>
+        <div class="modal-btns">
+          <button id="language-cancel" type="button" class="modal-dismiss">취소</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 글꼴 변경 -->
+    <div id="font-modal" class="modal hidden">
+      <div class="modal-box">
+        <h3>글꼴 변경</h3>
+        <label>글꼴</label>
+        <select id="font-family" style="font-size: 14px">
+          <option value="Consolas, 'Courier New', monospace" style="font-family: Consolas, monospace">Consolas</option>
+          <option value="'Courier New', monospace" style="font-family: 'Courier New', monospace">Courier New</option>
+          <option value="'Lucida Console', monospace" style="font-family: 'Lucida Console', monospace">Lucida Console</option>
+          <option value="'Cascadia Mono', Consolas, monospace" style="font-family: 'Cascadia Mono', monospace">Cascadia Mono</option>
+          <option value="'Cascadia Code', Consolas, monospace" style="font-family: 'Cascadia Code', monospace">Cascadia Code</option>
+          <option value="'D2Coding', Consolas, monospace" style="font-family: 'D2Coding', monospace">D2Coding (한국어 코딩 글꼴)</option>
+          <option value="'NanumGothicCoding', Consolas, monospace" style="font-family: 'NanumGothicCoding', monospace">나눔고딕코딩</option>
+          <option value="'Malgun Gothic', Consolas, monospace" style="font-family: 'Malgun Gothic', monospace">맑은 고딕</option>
+          <option value="'Fira Code', Consolas, monospace" style="font-family: 'Fira Code', monospace">Fira Code</option>
+          <option value="'JetBrains Mono', Consolas, monospace" style="font-family: 'JetBrains Mono', monospace">JetBrains Mono</option>
+          <option value="'Source Code Pro', Consolas, monospace" style="font-family: 'Source Code Pro', monospace">Source Code Pro</option>
+          <option value="'Noto Sans Mono', Consolas, monospace" style="font-family: 'Noto Sans Mono', monospace">Noto Sans Mono</option>
+          <option value="Menlo, Monaco, Consolas, monospace" style="font-family: Menlo, Monaco, monospace">Menlo / Monaco (macOS)</option>
+        </select>
+        <label>크기</label>
+        <div class="font-size-row">
+          <button id="font-size-dec" type="button">－</button>
+          <span id="font-size-value">14px</span>
+          <button id="font-size-inc" type="button">＋</button>
+        </div>
+        <div class="modal-btns">
+          <button id="font-cancel" type="button" class="modal-dismiss">취소</button>
+          <button id="font-ok" type="button" class="primary">적용</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
