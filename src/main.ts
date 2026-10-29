@@ -34,6 +34,7 @@ const stLangEl = document.getElementById("st-lang") as HTMLSpanElement;
 const stTabEl = document.getElementById("st-tabsize") as HTMLSpanElement;
 const stEncodingEl = document.getElementById("st-encoding") as HTMLSpanElement;
 const stPosEl = document.getElementById("st-pos") as HTMLSpanElement;
+const stMacroEl = document.getElementById("st-macro") as HTMLSpanElement;
 
 const DEFAULT_FONT_FAMILY = "Consolas, 'Courier New', monospace";
 let fontFamily = localStorage.getItem("idit.fontFamily") || DEFAULT_FONT_FAMILY;
@@ -73,6 +74,8 @@ interface Tab {
   path: string | null;
   ftp: RemoteSource | null;
   encoding: string;
+  readOnly: boolean;
+  hex: boolean;
   savedVersionId: number;
   viewState: monaco.editor.ICodeEditorViewState | null;
 }
@@ -96,6 +99,7 @@ function baseName(path: string): string {
 }
 
 function tabLabel(tab: Tab): string {
+  if (tab.hex) return `${tab.path ? baseName(tab.path) : "제목 없음"} (HEX)`;
   if (tab.path) return baseName(tab.path);
   if (tab.ftp) return `${baseName(tab.ftp.path)} (${tab.ftp.protocol.toUpperCase()})`;
   return "제목 없음";
@@ -143,7 +147,7 @@ function updatePosStatus() {
 function createTab(
   text: string,
   lang: string,
-  opts?: { path?: string; ftp?: RemoteSource; encoding?: string },
+  opts?: { path?: string; ftp?: RemoteSource; encoding?: string; readOnly?: boolean; hex?: boolean },
 ): Tab {
   const id = nextTabId++;
   const model = monaco.editor.createModel(text, lang, monaco.Uri.parse(`inmemory://idit/${id}`));
@@ -154,6 +158,8 @@ function createTab(
     path: opts?.path ?? null,
     ftp: opts?.ftp ?? null,
     encoding: opts?.encoding ?? "UTF-8",
+    readOnly: opts?.readOnly ?? false,
+    hex: opts?.hex ?? false,
     savedVersionId: model.getAlternativeVersionId(),
     viewState: null,
   };
@@ -170,6 +176,7 @@ function switchTab(id: number) {
   if (!next) return;
   activeTabId = id;
   editor.setModel(next.model);
+  editor.updateOptions({ readOnly: next.readOnly });
   if (next.viewState) editor.restoreViewState(next.viewState);
   editor.focus();
   updateStatusAndTitle();
@@ -328,8 +335,17 @@ async function writeWithEncoding(path: string, content: string, encoding: string
   return true;
 }
 
+async function blockIfReadOnly(tab: Tab): Promise<boolean> {
+  if (tab.hex || tab.readOnly) {
+    await message("읽기 전용 탭입니다 (HEX 보기 등). 저장할 수 없습니다.", { title: "iDit", kind: "info" });
+    return true;
+  }
+  return false;
+}
+
 async function saveLocal(forcePickPath: boolean) {
   const tab = activeTab();
+  if (await blockIfReadOnly(tab)) return;
   let path = tab.path;
   if (!path || forcePickPath) {
     const picked = await saveDialog();
@@ -345,6 +361,7 @@ async function saveLocal(forcePickPath: boolean) {
 
 async function saveWithEncoding() {
   const tab = activeTab();
+  if (await blockIfReadOnly(tab)) return;
   const encoding = await pickEncoding("인코딩 지정해서 저장", tab.encoding);
   if (!encoding) return;
   let path = tab.path;
@@ -363,6 +380,7 @@ async function saveWithEncoding() {
 
 async function saveToFtp(forcePickPath: boolean) {
   const tab = activeTab();
+  if (await blockIfReadOnly(tab)) return;
   const content = tab.model.getValue();
   if (tab.ftp && !forcePickPath) {
     const ok = await ftpSaveTo(tab.ftp.protocol, tab.ftp.host, tab.ftp.port, tab.ftp.path, content);
@@ -421,6 +439,204 @@ async function changeFont() {
   localStorage.setItem("idit.fontFamily", fontFamily);
   localStorage.setItem("idit.fontSize", String(fontSize));
   applyViewOptions();
+}
+
+// ---- 칼럼(블록) 선택 모드 ----
+// 켜면 방향키/드래그 선택이 사각형(칼럼) 선택이 된다. (끄고도 Shift+Alt+드래그로 가능)
+let columnMode = false;
+function toggleColumnMode() {
+  columnMode = !columnMode;
+  editor.updateOptions({ columnSelection: columnMode });
+  editor.focus();
+}
+
+// ---- 매크로 기록/재생 ----
+// onDidType으로 입력 텍스트(한글 IME 포함)를, onKeyDown으로 편집/이동 키를 기록하고
+// editor.trigger로 그대로 재생한다.
+type MacroStep = { t: "type"; text: string } | { t: "cmd"; cmd: string };
+let macroRecording = false;
+let macroSteps: MacroStep[] = [];
+let lastMacro: MacroStep[] = [];
+
+// onDidType은 표준 타입 선언엔 없지만 런타임엔 존재한다.
+(editor as unknown as { onDidType(cb: (text: string) => void): monaco.IDisposable }).onDidType((text) => {
+  if (!macroRecording) return;
+  if (text === "\n" || text === "\r\n" || text === "\t") return; // 제어키 쪽에서 기록
+  macroSteps.push({ t: "type", text });
+});
+
+const KEY_CMD: Record<number, { plain: string; shift?: string; ctrl?: string }> = {
+  [monaco.KeyCode.Enter]: { plain: "__newline__" },
+  [monaco.KeyCode.Tab]: { plain: "tab" },
+  [monaco.KeyCode.Backspace]: { plain: "deleteLeft", ctrl: "deleteWordLeft" },
+  [monaco.KeyCode.Delete]: { plain: "deleteRight", ctrl: "deleteWordRight" },
+  [monaco.KeyCode.LeftArrow]: { plain: "cursorLeft", shift: "cursorLeftSelect", ctrl: "cursorWordLeft" },
+  [monaco.KeyCode.RightArrow]: { plain: "cursorRight", shift: "cursorRightSelect", ctrl: "cursorWordRight" },
+  [monaco.KeyCode.UpArrow]: { plain: "cursorUp", shift: "cursorUpSelect" },
+  [monaco.KeyCode.DownArrow]: { plain: "cursorDown", shift: "cursorDownSelect" },
+  [monaco.KeyCode.Home]: { plain: "cursorHome", shift: "cursorHomeSelect", ctrl: "cursorTop" },
+  [monaco.KeyCode.End]: { plain: "cursorEnd", shift: "cursorEndSelect", ctrl: "cursorBottom" },
+};
+
+editor.onKeyDown((e) => {
+  if (!macroRecording) return;
+  const m = KEY_CMD[e.keyCode];
+  if (!m) return;
+  const cmd = (e.ctrlKey && m.ctrl) || (e.shiftKey && m.shift) || m.plain;
+  macroSteps.push({ t: "cmd", cmd });
+});
+
+function updateMacroStatus() {
+  stMacroEl.textContent = macroRecording ? "● 매크로 기록 중" : "";
+}
+
+function toggleMacroRecord() {
+  if (macroRecording) {
+    macroRecording = false;
+    lastMacro = macroSteps.slice();
+    updateMacroStatus();
+  } else {
+    macroSteps = [];
+    macroRecording = true;
+    updateMacroStatus();
+    editor.focus();
+  }
+}
+
+async function playMacro() {
+  if (macroRecording) toggleMacroRecord(); // 기록 중이면 먼저 멈춘다
+  if (lastMacro.length === 0) {
+    await message("재생할 매크로가 없습니다. 먼저 기록하세요.", { title: "iDit", kind: "info" });
+    return;
+  }
+  if (activeTab().readOnly) return;
+  editor.focus();
+  for (const step of lastMacro) {
+    if (step.t === "type") {
+      editor.trigger("macro", "type", { text: step.text });
+    } else if (step.cmd === "__newline__") {
+      editor.trigger("macro", "type", { text: "\n" });
+    } else if (step.cmd === "tab") {
+      editor.trigger("macro", "tab", null);
+    } else {
+      editor.trigger("macro", step.cmd, null);
+    }
+  }
+}
+
+// ---- HEX 보기 (좌측 16진 · 우측 ASCII 분할 오버레이) ----
+const hexOverlay = document.getElementById("hex-overlay") as HTMLDivElement;
+const hexNameEl = document.getElementById("hex-name") as HTMLSpanElement;
+const hexInfoEl = document.getElementById("hex-info") as HTMLSpanElement;
+const hexLeftEl = document.getElementById("hex-col-left") as HTMLPreElement;
+const hexRightEl = document.getElementById("hex-col-right") as HTMLPreElement;
+const hexCloseBtn = document.getElementById("hex-close") as HTMLButtonElement;
+
+const HEX_MAX = 1024 * 1024; // 1MB까지만 렌더 (그 이상은 앞부분만)
+
+function showHex(bytes: Uint8Array, title: string) {
+  const truncated = bytes.length > HEX_MAX;
+  const view = truncated ? bytes.subarray(0, HEX_MAX) : bytes;
+  const leftLines: string[] = [];
+  const rightLines: string[] = [];
+  for (let off = 0; off < view.length; off += 16) {
+    const slice = view.subarray(off, off + 16);
+    const hexParts: string[] = [];
+    let ascii = "";
+    for (let i = 0; i < 16; i++) {
+      if (i === 8) hexParts.push(""); // 8바이트마다 간격
+      if (i < slice.length) {
+        const b = slice[i];
+        hexParts.push(b.toString(16).padStart(2, "0"));
+        ascii += b >= 0x20 && b < 0x7f ? String.fromCharCode(b) : ".";
+      } else {
+        hexParts.push("  ");
+      }
+    }
+    leftLines.push(`${off.toString(16).padStart(8, "0")}   ${hexParts.join(" ")}`);
+    rightLines.push(ascii);
+  }
+  hexLeftEl.textContent = leftLines.join("\n") || "(빈 파일)";
+  hexRightEl.textContent = rightLines.join("\n");
+  hexNameEl.textContent = title;
+  hexInfoEl.textContent =
+    `${bytes.length.toLocaleString()} 바이트` + (truncated ? ` · 앞 ${HEX_MAX.toLocaleString()}바이트만 표시` : "");
+  hexOverlay.classList.remove("hidden");
+}
+
+function closeHex() {
+  hexOverlay.classList.add("hidden");
+}
+
+hexCloseBtn.addEventListener("click", closeHex);
+
+async function openHex() {
+  const path = await openDialog({ multiple: false, directory: false });
+  if (!path || Array.isArray(path)) return;
+  const bytes = await readFile(path);
+  showHex(bytes, path);
+}
+
+// 현재 탭의 내용을 그 탭의 인코딩으로 바이트화해서 HEX로 본다 (편집 중 내용 반영).
+async function openHexCurrent() {
+  const tab = activeTab();
+  const text = tab.model.getValue();
+  let bytes: Uint8Array;
+  if (tab.encoding === "UTF-8") {
+    bytes = new TextEncoder().encode(text);
+  } else {
+    const result = await invoke<{ bytes: number[]; had_errors: boolean }>("encode_text", {
+      text,
+      encoding: tab.encoding,
+    });
+    bytes = new Uint8Array(result.bytes);
+  }
+  showHex(bytes, (tab.path ? baseName(tab.path) : "제목 없음") + " (HEX)");
+}
+
+// ---- 파일 비교 (diff) ----
+const diffOverlay = document.getElementById("diff-overlay") as HTMLDivElement;
+const diffEditorEl = document.getElementById("diff-editor") as HTMLDivElement;
+const diffLeftName = document.getElementById("diff-left-name") as HTMLSpanElement;
+const diffRightName = document.getElementById("diff-right-name") as HTMLSpanElement;
+const diffCloseBtn = document.getElementById("diff-close") as HTMLButtonElement;
+let diffEditor: monaco.editor.IStandaloneDiffEditor | null = null;
+let diffModels: monaco.editor.ITextModel[] = [];
+
+function closeDiff() {
+  diffOverlay.classList.add("hidden");
+  diffModels.forEach((m) => m.dispose());
+  diffModels = [];
+}
+
+diffCloseBtn.addEventListener("click", closeDiff);
+
+async function openDiff() {
+  const left = await openDialog({ multiple: false, directory: false, title: "원본 파일 선택" });
+  if (!left || Array.isArray(left)) return;
+  const right = await openDialog({ multiple: false, directory: false, title: "비교할 파일 선택" });
+  if (!right || Array.isArray(right)) return;
+  const [lt, rt] = await Promise.all([readTextFile(left), readTextFile(right)]);
+
+  diffLeftName.textContent = left;
+  diffRightName.textContent = right;
+  diffOverlay.classList.remove("hidden");
+
+  if (!diffEditor) {
+    diffEditor = monaco.editor.createDiffEditor(diffEditorEl, {
+      theme: "vs-dark",
+      automaticLayout: true,
+      readOnly: true,
+      fontSize,
+      fontFamily,
+      renderSideBySide: true,
+      scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10 },
+    });
+  }
+  const original = monaco.editor.createModel(lt, languageFromPath(left));
+  const modified = monaco.editor.createModel(rt, languageFromPath(right));
+  diffModels = [original, modified];
+  diffEditor.setModel({ original, modified });
 }
 
 // ---- 메뉴/단축키 동작 ----
@@ -490,6 +706,25 @@ async function runAction(id: string) {
         editor.focus();
         editor.getAction("editor.action.startFindReplaceAction")?.run();
         break;
+      case "edit:column":
+        toggleColumnMode();
+        break;
+
+      case "tool:macro_record":
+        toggleMacroRecord();
+        break;
+      case "tool:macro_play":
+        await playMacro();
+        break;
+      case "tool:hex_current":
+        await openHexCurrent();
+        break;
+      case "tool:hex":
+        await openHex();
+        break;
+      case "tool:diff":
+        await openDiff();
+        break;
 
       case "view:wordwrap":
         wordWrapOn = !wordWrapOn;
@@ -531,11 +766,23 @@ function modalOpen(): HTMLElement | null {
   return document.querySelector(".modal:not(.hidden)");
 }
 
-// ESC — 열려 있는 팝업을 닫는다 (해당 모달의 취소/닫기 버튼을 눌러 정상적으로 정리한다).
+// ESC — 열려 있는 팝업/오버레이를 닫는다.
 window.addEventListener(
   "keydown",
   (e) => {
     if (e.key !== "Escape") return;
+    if (!hexOverlay.classList.contains("hidden")) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeHex();
+      return;
+    }
+    if (!diffOverlay.classList.contains("hidden")) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeDiff();
+      return;
+    }
     const modal = modalOpen();
     if (!modal) return;
     const dismiss = modal.querySelector(".modal-dismiss") as HTMLButtonElement | null;
@@ -582,11 +829,19 @@ window.addEventListener(
       void runAction("file:open_ftp");
       return;
     }
+    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "c") {
+      e.preventDefault();
+      e.stopPropagation();
+      void runAction("edit:column");
+      return;
+    }
     const mod = e.ctrlKey || e.metaKey;
     if (!mod) return;
     const key = e.key.toLowerCase();
     let id: string | null = null;
-    if (key === "n") id = "file:new";
+    if (e.shiftKey && key === "r") id = "tool:macro_record";
+    else if (e.shiftKey && key === "p") id = "tool:macro_play";
+    else if (key === "n") id = "file:new";
     else if (key === "o") id = "file:open";
     else if (key === "s") id = e.shiftKey ? "file:save_as" : "file:save";
     else if (key === "=" || key === "+") id = "view:zoom_in";

@@ -94,7 +94,8 @@ body {
   white-space: nowrap;
 }
 
-.menu-item:hover {
+.menu-item:hover,
+.menu-item.active {
   background: #094771;
   color: #fff;
 }
@@ -104,7 +105,8 @@ body {
   font-size: 11px;
 }
 
-.menu-item:hover .accel {
+.menu-item:hover .accel,
+.menu-item.active .accel {
   color: #cfe3f5;
 }
 
@@ -163,6 +165,159 @@ body {
 }
 
 #editor {
+  flex: 1;
+  min-height: 0;
+}
+
+#st-macro {
+  color: #f48771;
+  font-weight: 700;
+}
+
+/* HEX 보기 오버레이 */
+#hex-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+}
+
+#hex-overlay.hidden {
+  display: none;
+}
+
+#hex-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: #2d2d30;
+  border-bottom: 1px solid #1c1c1c;
+  font-size: 12px;
+  color: #ddd;
+  flex-shrink: 0;
+}
+
+#hex-head .spacer {
+  flex: 1;
+}
+
+#hex-info {
+  color: #9a9a9a;
+}
+
+#hex-head button {
+  background: #333;
+  color: #ddd;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#hex-cols-head {
+  display: flex;
+  background: #252526;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.hex-col-title {
+  font-size: 11px;
+  color: #9a9a9a;
+  padding: 4px 16px;
+  font-weight: 700;
+}
+
+.hex-left-title {
+  flex: 0 0 auto;
+  width: 640px;
+}
+
+#hex-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: auto;
+}
+
+#hex-body pre {
+  margin: 0;
+  padding: 8px 16px;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #d4d4d4;
+  white-space: pre;
+}
+
+#hex-col-left {
+  flex: 0 0 auto;
+  width: 640px;
+  border-right: 1px solid #333;
+  color: #cdd6df;
+}
+
+#hex-col-right {
+  flex: 1;
+  color: #b5c7a6;
+}
+
+/* 파일 비교(diff) 오버레이 */
+#diff-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+}
+
+#diff-overlay.hidden {
+  display: none;
+}
+
+#diff-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: #2d2d30;
+  border-bottom: 1px solid #1c1c1c;
+  font-size: 12px;
+  color: #ddd;
+  flex-shrink: 0;
+}
+
+#diff-head .spacer {
+  flex: 1;
+}
+
+.diff-name {
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diff-vs {
+  color: #f5a623;
+}
+
+#diff-head button {
+  background: #333;
+  color: #ddd;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#diff-editor {
   flex: 1;
   min-height: 0;
 }

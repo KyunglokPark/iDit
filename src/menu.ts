@@ -43,6 +43,19 @@ const MENUS: MenuDef[] = [
       { sep: true },
       { id: "edit:find", label: "찾기...", accel: "Ctrl+F" },
       { id: "edit:replace", label: "바꾸기...", accel: "Ctrl+H" },
+      { sep: true },
+      { id: "edit:column", label: "칼럼 선택 모드 전환", accel: "Ctrl+Alt+C" },
+    ],
+  },
+  {
+    label: "도구",
+    items: [
+      { id: "tool:macro_record", label: "매크로 기록 시작/중지", accel: "Ctrl+Shift+R" },
+      { id: "tool:macro_play", label: "매크로 재생", accel: "Ctrl+Shift+P" },
+      { sep: true },
+      { id: "tool:hex_current", label: "현재 파일 HEX로 보기" },
+      { id: "tool:hex", label: "HEX로 열기..." },
+      { id: "tool:diff", label: "파일 비교(diff)..." },
     ],
   },
   {
@@ -64,19 +77,36 @@ const MENUS: MenuDef[] = [
   },
 ];
 
-let openMenuEl: HTMLDivElement | null = null;
+const menuEls: HTMLDivElement[] = [];
+const itemEls: HTMLDivElement[][] = []; // 메뉴별 클릭 가능한 항목(구분선 제외)
+let openIdx = -1; // 열린 상단 메뉴 인덱스
+let itemIdx = -1; // 그 안에서 키보드로 하이라이트된 항목
 
-function closeMenu() {
-  if (openMenuEl) {
-    openMenuEl.classList.remove("open");
-    openMenuEl = null;
-  }
+function clearHighlight() {
+  if (openIdx >= 0) itemEls[openIdx].forEach((el) => el.classList.remove("active"));
 }
 
-function openMenu(el: HTMLDivElement) {
-  if (openMenuEl && openMenuEl !== el) openMenuEl.classList.remove("open");
-  el.classList.add("open");
-  openMenuEl = el;
+function closeMenu() {
+  clearHighlight();
+  if (openIdx >= 0) menuEls[openIdx].classList.remove("open");
+  openIdx = -1;
+  itemIdx = -1;
+}
+
+function openMenu(idx: number) {
+  if (openIdx === idx) return;
+  closeMenu();
+  menuEls[idx].classList.add("open");
+  openIdx = idx;
+  itemIdx = -1;
+}
+
+function highlight(idx: number) {
+  clearHighlight();
+  const items = itemEls[openIdx];
+  if (!items.length) return;
+  itemIdx = (idx + items.length) % items.length;
+  items[itemIdx].classList.add("active");
 }
 
 /** 메뉴바를 그린다. 반환된 openFileMenu()는 Alt 키로 파일 메뉴를 열 때 쓴다. */
@@ -95,8 +125,7 @@ export function initMenuBar(runAction: (id: string) => void): { openFileMenu: ()
   name.textContent = "iDit";
   bar.appendChild(name);
 
-  const menuEls: HTMLDivElement[] = [];
-  for (const def of MENUS) {
+  MENUS.forEach((def, mi) => {
     const menu = document.createElement("div");
     menu.className = "menu";
 
@@ -107,6 +136,7 @@ export function initMenuBar(runAction: (id: string) => void): { openFileMenu: ()
 
     const drop = document.createElement("div");
     drop.className = "menu-drop";
+    const items: HTMLDivElement[] = [];
     for (const item of def.items) {
       if (item.sep) {
         const sep = document.createElement("div");
@@ -131,30 +161,69 @@ export function initMenuBar(runAction: (id: string) => void): { openFileMenu: ()
         if (item.id) runAction(item.id);
       });
       drop.appendChild(row);
+      items.push(row);
     }
     menu.appendChild(drop);
 
-    // 클릭으로 열고 닫기, 다른 메뉴가 열려 있을 땐 호버로 전환 (실제 메뉴바처럼)
     label.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (menu.classList.contains("open")) closeMenu();
-      else openMenu(menu);
+      if (openIdx === mi) closeMenu();
+      else openMenu(mi);
     });
     label.addEventListener("mouseenter", () => {
-      if (openMenuEl && openMenuEl !== menu) openMenu(menu);
+      if (openIdx >= 0 && openIdx !== mi) openMenu(mi);
     });
 
     bar.appendChild(menu);
     menuEls.push(menu);
-  }
+    itemEls.push(items);
+  });
 
   // 바깥 클릭 시 닫기
   document.addEventListener("click", () => closeMenu());
 
+  // 키보드 네비게이션 (메뉴가 열려 있을 때만)
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (openIdx < 0) return;
+      const nav = ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Enter", "Escape"];
+      if (!nav.includes(e.key)) return;
+      e.preventDefault();
+      e.stopPropagation(); // 에디터로 방향키/엔터가 새어나가지 않게
+      switch (e.key) {
+        case "ArrowRight":
+          openMenu((openIdx + 1) % menuEls.length);
+          highlight(0);
+          break;
+        case "ArrowLeft":
+          openMenu((openIdx - 1 + menuEls.length) % menuEls.length);
+          highlight(0);
+          break;
+        case "ArrowDown":
+          highlight(itemIdx + 1);
+          break;
+        case "ArrowUp":
+          highlight(itemIdx - 1);
+          break;
+        case "Enter":
+          if (itemIdx >= 0) itemEls[openIdx][itemIdx].click();
+          break;
+        case "Escape":
+          closeMenu();
+          break;
+      }
+    },
+    true,
+  );
+
   return {
     openFileMenu: () => {
-      if (openMenuEl === menuEls[0]) closeMenu();
-      else openMenu(menuEls[0]);
+      if (openIdx === 0) closeMenu();
+      else {
+        openMenu(0);
+        highlight(0); // Alt로 열면 첫 항목을 바로 하이라이트
+      }
     },
   };
 }

@@ -12,8 +12,39 @@
 
       <div id="editor"></div>
 
+      <!-- HEX 보기 오버레이 (좌측 16진 · 우측 ASCII) -->
+      <div id="hex-overlay" class="hidden">
+        <div id="hex-head">
+          <span id="hex-name" class="diff-name"></span>
+          <span id="hex-info"></span>
+          <span class="spacer"></span>
+          <button id="hex-close" type="button">닫기 (ESC)</button>
+        </div>
+        <div id="hex-cols-head">
+          <div class="hex-col-title hex-left-title">오프셋 · 16진수</div>
+          <div class="hex-col-title hex-right-title">ASCII</div>
+        </div>
+        <div id="hex-body">
+          <pre id="hex-col-left"></pre>
+          <pre id="hex-col-right"></pre>
+        </div>
+      </div>
+
+      <!-- 파일 비교(diff) 오버레이 -->
+      <div id="diff-overlay" class="hidden">
+        <div id="diff-head">
+          <span id="diff-left-name" class="diff-name"></span>
+          <span class="diff-vs">↔</span>
+          <span id="diff-right-name" class="diff-name"></span>
+          <span class="spacer"></span>
+          <button id="diff-close" type="button">닫기 (ESC)</button>
+        </div>
+        <div id="diff-editor"></div>
+      </div>
+
       <footer id="statusbar">
         <span id="st-path"></span>
+        <span id="st-macro"></span>
         <span class="spacer"></span>
         <span id="st-lang" class="clickable" title="언어 선택"></span>
         <span id="st-tabsize" class="clickable" title="탭 크기 (클릭하여 2 / 4 / 8 전환)"></span>
